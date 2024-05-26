@@ -393,6 +393,85 @@ float fmaxf(float a, float b)
 // 	return a - (int)(a / b) * b;
 // }
 
+// int vc_rgb_to_binary(IVC *srcdst){
+
+//     if(srcdst->width <= 0 || srcdst->height <= 0){
+//         return 0;
+//     }
+//     if(srcdst->channels != 3){
+//         return 0;
+//     }
+    
+//     for(int y = 0; y < srcdst->height; y++){
+//         for(int x = 0; x < srcdst->width; x++){
+//             int pos = y * srcdst->bytesperline + x * srcdst->channels;
+//             srcdst->data[pos] = 255 - srcdst->data[pos];
+//             srcdst->data[pos + 1] = 255 - srcdst->data[pos + 1];
+//             srcdst->data[pos + 2] = 255 - srcdst->data[pos + 2];
+//         }
+
+//     }
+//     return 1;
+// }
+
+// Função para converter uma imagem RGB para uma imagem binária
+int vc_rgb_to_binary(IVC *srcdst)
+{
+	unsigned char *data = (unsigned char *)srcdst->data;
+	int width = srcdst->width;
+	int height = srcdst->height;
+	int bytesperline = srcdst->bytesperline;
+	int channels = srcdst->channels;
+	float r, g, b, y, cb, cr;
+	int i, size;
+
+	// Verificação de erros
+	if ((width <= 0) || (height <= 0) || (data == NULL))
+		return 0;
+	if (channels != 3)
+		return 0;
+
+	size = width * height * channels;
+
+	for (i = 0; i < size; i = i + channels)
+	{
+		r = (float)data[i];
+		g = (float)data[i + 1];
+		b = (float)data[i + 2];
+
+		// Conversão de RGB para YCbCr
+		y = 0.299f * r + 0.587f * g + 0.114f * b;
+		cb = 128 - 0.168736f * r - 0.331264f * g + 0.5f * b;
+		cr = 128 + 0.5f * r - 0.418688f * g - 0.081312f * b;
+
+		// Conversão de YCbCr para RGB
+		r = y + 1.402f * (cr - 128);
+		g = y - 0.344136f * (cb - 128) - 0.714136f * (cr - 128);
+		b = y + 1.772f * (cb - 128);
+
+		// Conversão de RGB para binário
+		r = fminf(255.0f, fmaxf(0.0f, r));
+		g = fminf(255.0f, fmaxf(0.0f, g));
+		b = fminf(255.0f, fmaxf(0.0f, b));
+
+		if (r > 127 || g > 127 || b > 127)
+		{
+			data[i] = 0;
+			data[i + 1] = 0;
+			data[i + 2] = 0;
+		}
+		else
+		{
+			data[i] = 255;
+			data[i + 1] = 255;
+			data[i + 2] = 255;
+		}
+	}
+
+	return 1;
+}
+
+
 // Função para converter uma imagem RGB para uma imagem HSV
 int vc_rgb_to_hsv(IVC *srcdst)
 {
@@ -617,11 +696,11 @@ int vc_gray_to_binary(IVC *srcdst, int threshold)
 
 			if (data[pos] < threshold)
 			{
-				data[pos] = 0;
+				data[pos] = 255;
 			}
 			else
 			{
-				data[pos] = 255;
+				data[pos] = 0;
 			}
 		}
 	}

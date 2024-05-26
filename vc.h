@@ -38,6 +38,7 @@ IVC *vc_read_image(char *filename);
 int vc_write_image(char *filename, IVC *image);
 
 //FUNCOES PRODUZIDAS EM SALA
+int vc_rgb_to_binary(IVC *srcdst);
 int vc_rgb_to_hsv(IVC *srcdst);
 int vc_hsv_segmentation(IVC *src, int hmin, int hmax, int smin, int smax, int vmin, int vmax);
 int vc_scale_gray_to_rgb(IVC *src, IVC *dst);
