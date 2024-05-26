@@ -35,7 +35,8 @@ void vc_timer(void) {
 
 int main(void) {
 	// Vídeo
-	char videofile[120] = "../video_resistors.mp4";
+	//char videofile[120] = "../video_resistors.mp4";
+	char videofile[120] = "C:/VC_T2_24200_24204_24181/video_resistors.mp4";
 	cv::VideoCapture capture; // Objeto para captura de vídeo
 	struct
 	{
@@ -109,23 +110,31 @@ int main(void) {
 
 		// Cria uma nova imagem IVC
 		IVC *image = vc_image_new(video.width, video.height, 3, 255);
+		IVC *image2 = vc_image_new(video.width, video.height, 1, 255);
 		// Copia dados de imagem da estrutura cv::Mat para uma estrutura IVC
 		memcpy(image->data, frame.data, video.width * video.height * 3);
+		//memcpy(image2->data, frame.data, video.width * video.height);
 		// Executa uma função da nossa biblioteca vc
 
-		vc_rgb_to_hsv(image);
+		//vc_rgb_to_binary(image);
+		vc_rgb_to_gray(image, image2);
+		vc_gray_to_binary(image2, 150);
+
+		//vc_rgb_to_hsv(image);
 
 		
-		
-		// Copia dados de imagem da estrutura IVC para uma estrutura cv::Mat
-		memcpy(frame.data, image->data, video.width * video.height * 3);
+        // Cria uma nova imagem cv::Mat para a imagem em tons de cinza
+        cv::Mat gray_frame(video.height, video.width, CV_8UC1);
+        memcpy(gray_frame.data, image2->data, video.width * video.height);
+
 		// Liberta a memória da imagem IVC que havia sido criada
 		vc_image_free(image);
+		vc_image_free(image2);
 		
 		// +++++++++++++++++++++++++
 
 		/* Exibe a frame */
-		cv::imshow("VC - VIDEO", frame);
+		cv::imshow("VC - VIDEO", gray_frame);
 
 		/* Sai da aplicação, se o utilizador premir a tecla 'q' */
 		key = cv::waitKey(1);
