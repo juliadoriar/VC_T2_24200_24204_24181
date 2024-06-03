@@ -724,11 +724,11 @@ int vc_gray_to_binary(IVC *srcdst, int threshold)
 
 			if (data[pos] < threshold)
 			{
-				data[pos] = 255;
+				data[pos] = 0;
 			}
 			else
 			{
-				data[pos] = 0;
+				data[pos] = 255;
 			}
 		}
 	}

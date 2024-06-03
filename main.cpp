@@ -84,6 +84,13 @@ int main(void)
 	vc_timer();
 
 	cv::Mat frame;
+	
+	// Cria uma nova imagem IVC
+	IVC *image = vc_image_new(video.width, video.height, 3, 255);
+	IVC *image2 = vc_image_new(video.width, video.height, 1, 255);
+	IVC *image3 = vc_image_new(video.width, video.height, 1, 255);
+	IVC *image4 = vc_image_new(video.width, video.height, 1, 255);
+
 	while (key != 'q')
 	{
 		/* Leitura de uma frame do vídeo */
@@ -113,50 +120,35 @@ int main(void)
 		// Faça o seu código aqui...
 		// +++++++++++++++++++++++++
 
-		// Cria uma nova imagem IVC
-		IVC *image = vc_image_new(video.width, video.height, 3, 255);
-		IVC *teste = vc_image_new(video.width, video.height, 3, 255);
-		IVC *image2 = vc_image_new(video.width, video.height, 1, 255);
-		IVC *image3 = vc_image_new(video.width, video.height, 1, 255);
+
 		// Copia dados de imagem da estrutura cv::Mat para uma estrutura IVC
 		memcpy(image->data, frame.data, video.width * video.height * 3);
-		memcpy(teste->data, frame.data, video.width * video.height * 3);
-		// memcpy(image2->data, frame.data, video.width * video.height * 3);
-
-		// Executa uma função da nossa biblioteca vc
 
 		vc_rgb_to_hsv(image);
-		vc_hsv_segmentation(image, 10, 280, 30, 100, 30, 100);
+		vc_hsv_segmentation(image, 20, 270, 30, 100, 30, 100);
 
-		//vc_3chanels_to_1(image, image2);
+		vc_3chanels_to_1(image, image2);
 
-		vc_binary_dilate(image, image2, 15);
+		vc_gray_dilate(image2, image3, 15);
 		//vc_binary_dilate(image2, image3, 15);
 
+		vc_gray_to_binary(image3, 125);
 
 		int nlabels;
-		OVC *blobs = vc_binary_blob_labelling(image2, image3, &nlabels);
+		OVC *blobs = vc_binary_blob_labelling(image3, image4, &nlabels);
 
-		// vc_gray_to_binary_media(image2);
-		vc_binary_blob_info(image3, blobs, nlabels);
-		vc_draw_boundingbox(image, blobs);
-		//  Cria uma nova imagem cv::Mat para a imagem em binario
-		//  cv::Mat binary_frame(video.height, video.width, CV_8UC1);
-		//  cv::Mat gray_frame(video.height, video.width, CV_8UC1);
+		// vc_binary_blob_info(image4, blobs, nlabels);
+		// vc_draw_boundingbox(image, blobs);
+
+		cv::Mat gray_frame(video.height, video.width, CV_8UC1);
 
 		//  Copia dados de imagem da estrutura IVC para uma estrutura cv::Mat
-		memcpy(frame.data, image->data, video.width * video.height * 3);
-
-		// Liberta a memória da imagem IVC que havia sido criada
-		vc_image_free(image);
-		vc_image_free(image2);
-		vc_image_free(image3);
-		vc_image_free(teste);
+		memcpy(gray_frame.data, image4->data, video.width * video.height);
 
 		// +++++++++++++++++++++++++
 
 		/* Exibe a frame */
-		cv::imshow("VC - VIDEO", frame);
+		cv::imshow("VC - VIDEO", gray_frame);
 
 		/* Sai da aplicação, se o utilizador premir a tecla 'q' */
 		key = cv::waitKey(1);
@@ -170,6 +162,12 @@ int main(void)
 
 	/* Fecha o ficheiro de vídeo */
 	capture.release();
+
+	// Liberta a memória da imagem IVC que havia sido criada
+	vc_image_free(image);
+	vc_image_free(image2);
+	vc_image_free(image3);
+	vc_image_free(image4);
 
 	return 0;
 }
