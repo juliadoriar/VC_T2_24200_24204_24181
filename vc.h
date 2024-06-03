@@ -61,6 +61,7 @@ int vc_gray_edge_prewitt(IVC *src, IVC *dst, float th);
 int vc_gray_lowpass_mean_filter(IVC* src, IVC* dst, int kernel);
 int vc_gray_lowpass_median_filter(IVC* src, IVC* dst, int kernel);
 int vc_gray_lowpass_gaussian_filter(IVC *src, IVC *dst);
+int vc_3chanels_to_1(IVC *src, IVC *dst);
 
 
 
@@ -84,3 +85,5 @@ typedef struct {
 
 OVC* vc_binary_blob_labelling(IVC *src, IVC *dst, int *nlabels);
 int vc_binary_blob_info(IVC *src, OVC *blobs, int nblobs);
+int vc_draw_boundingbox(IVC *src, OVC *blob);
+//int vc_draw_bounding_box(IVC *src, OVC *blobs, int nblobs, int margemX, int margemY);
