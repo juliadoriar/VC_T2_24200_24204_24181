@@ -442,6 +442,55 @@ int vc_3chanels_to_1(IVC *src, IVC *dst)
     return 1;
 }
 
+int vc_3chanels_to_1_binary(IVC *src, IVC *dst)
+{
+    unsigned char *data_src = (unsigned char *)src->data;
+    unsigned char *data_dst = (unsigned char *)dst->data;
+    int width = src->width;
+    int height = src->height;
+    int bytesperline = src->width * src->channels;
+    int channels = src->channels;
+    int x, y;
+    long int pos;
+
+    if ((src->width) <= 0 || (src->height <= 0) || (src->data == NULL))
+    {
+        printf("(vc_3chanels_to_1) Tamanhos inválidos\n");
+        return 0;
+    }
+    if (src->channels != 3)
+    {
+        printf("(vc_3chanels_to_1) Imagem tem de ter 3 canais\n");
+        return 0;
+    }
+    if ((dst->width) <= 0 || (dst->height <= 0) || (dst->data == NULL))
+    {
+        printf("(vc_3chanels_to_1) Tamanhos inválidos\n");
+        return 0;
+    }
+    if (dst->channels != 1)
+    {
+        printf("(vc_3chanels_to_1) Imagem tem de ter 1 canal\n");
+        return 0;
+    }
+    if (src->width != dst->width || src->height != dst->height)
+    {
+        printf("(vc_3chanels_to_1) Imagens têm tamanhos diferentes\n");
+        return 0;
+    }
+
+    for (y = 0; y < height; y++)
+    {
+        for (x = 0; x < width; x++)
+        {
+            pos = y * bytesperline + x * channels;
+            data_dst[y * width + x] = data_src[pos];
+        }
+    }
+
+    return 1;
+}
+
 // Função para converter uma imagem RGB para uma imagem binária
 int vc_rgb_to_binary(IVC *srcdst)
 {
@@ -1525,8 +1574,6 @@ int vc_draw_boundingbox(IVC *src, OVC *blob)
 	// Verificação de erros
 	if ((src->width <= 0) || (src->height <= 0) || (src->data == NULL))
 		return 0;
-	if (channels != 1)
-		return 0;
 
 	// Desenha a bounding box
 	for (y = blob->y; y < blob->y + blob->height; y++)
@@ -1544,62 +1591,6 @@ int vc_draw_boundingbox(IVC *src, OVC *blob)
 	return 1;
 }
 
-/*int vc_draw_bounding_box(IVC *src, OVC *blobs, int nblobs, int margemX, int margemY)
-{
-    unsigned char *data_src = (unsigned char *)src->data;
-    int width = src->width;
-    int height = src->height;
-    int channels = src->channels;
-    int bytesperline = width * channels;
-    int x, y;
-    long int pos;
-    int i;
-    int xmin, ymin, xmax, ymax;
-
-    if (width <= 0 || height <= 0 || src->data == NULL)
-    {
-        printf("(vc_draw_bounding_box) Tamanhos inválidos\n");
-        return 0;
-    }
-
-    // Desenha a bounding box para cada blob
-    for (i = 0; i < nblobs; i++)
-    {
-        xmin = blobs[i].x - margemX;
-        xmax = blobs[i].x + blobs[i].width + margemX;
-        ymin = blobs[i].y - margemY;
-        ymax = blobs[i].y + blobs[i].height + margemY;
-
-        // Desenha a bounding box no eixo dos x
-        for (x = xmin; x <= xmax; x++)
-        {
-            pos = ymin * bytesperline + x * channels;
-            data_src[pos] = 255; // Vermelho
-            // data_src[pos + 1] = 0; // Verde
-            // data_src[pos + 2] = 0; // Azul
-
-            pos = ymax * bytesperline + x * channels;
-            data_src[pos] = 255;
-            // data_src[pos + 1] = 0;
-            // data_src[pos + 2] = 0;
-        }
-        // Desenha a bounding box no eixo dos y
-        for (y = ymin; y <= ymax; y++)
-        {
-            pos = y * bytesperline + xmin * channels;
-            data_src[pos] = 255;
-            // data_src[pos + 1] = 0;
-            // data_src[pos + 2] = 0;
-
-            pos = y * bytesperline + xmax * channels;
-            data_src[pos] = 255;
-            // data_src[pos + 1] = 0;
-            // data_src[pos + 2] = 0;
-        }
-    }
-
-    return 1;
-}*/
 
 // Funcao para normalizar a imagem com labels e diferentes escalas de cinzas (pintar objetos que sao 1 a 255)
 int vc_normalizar_imagem_labelling(IVC *src, IVC *dst, int nblobs)

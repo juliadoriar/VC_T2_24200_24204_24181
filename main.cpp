@@ -5,6 +5,11 @@
 #include <opencv2\core.hpp>
 #include <opencv2\highgui.hpp>
 #include <opencv2\videoio.hpp>
+#include "opencv2/imgcodecs.hpp"
+#include "opencv2/imgproc.hpp"
+#include <fstream>
+#include <vector>
+#include <filesystem>
 
 extern "C"
 {
@@ -90,6 +95,7 @@ int main(void)
 	IVC *image2 = vc_image_new(video.width, video.height, 1, 255);
 	IVC *image3 = vc_image_new(video.width, video.height, 1, 255);
 	IVC *image4 = vc_image_new(video.width, video.height, 1, 255);
+	IVC *image5 = vc_image_new(video.width, video.height, 3, 255);
 
 	while (key != 'q')
 	{
@@ -123,32 +129,51 @@ int main(void)
 
 		// Copia dados de imagem da estrutura cv::Mat para uma estrutura IVC
 		memcpy(image->data, frame.data, video.width * video.height * 3);
+		memcpy(image5->data, frame.data, video.width * video.height * 3);
 
 		vc_rgb_to_hsv(image);
-		vc_hsv_segmentation(image, 20, 270, 30, 100, 30, 100);
 
-		vc_3chanels_to_1(image, image2);
+		vc_hsv_segmentation(image, 0, 200, 40, 60, 40, 75);
 
-		vc_gray_dilate(image2, image3, 15);
-		//vc_binary_dilate(image2, image3, 15);
+		//vc_3chanels_to_1(image, image2);
+		vc_3chanels_to_1_binary(image, image2);
 
-		vc_gray_to_binary(image3, 125);
+		//vc_gray_dilate(image2, image3, 15);
+		vc_binary_dilate(image2, image3, 30);
+
+		// // Encontra os contornos na imagem binarizada
+		// std::vector<std::vector<cv::Point>> contours;
+		// cv::findContours(gray_frame, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+		// // Desenha os contornos (caixas delimitadoras) na imagem original
+		// for (size_t i = 0; i < contours.size(); i++) {
+		// 	cv::Rect boundingBox = cv::boundingRect(contours[i]);
+		// 	cv::rectangle(frame, boundingBox, cv::Scalar(0, 255, 0), 2);
+		// }
 
 		int nlabels;
 		OVC *blobs = vc_binary_blob_labelling(image3, image4, &nlabels);
 
-		// vc_binary_blob_info(image4, blobs, nlabels);
-		// vc_draw_boundingbox(image, blobs);
+		vc_binary_blob_info(image4, blobs, nlabels);
+		vc_draw_boundingbox(image5, blobs);
 
-		cv::Mat gray_frame(video.height, video.width, CV_8UC1);
+		//int nlabels;
+		//OVC *blobs = vc_binary_blob_labelling(image3, image4, &nlabels);
+
+		//vc_binary_blob_info(image4, blobs, nlabels);
+		//vc_draw_boundingbox(image5, blobs);
+
 
 		//  Copia dados de imagem da estrutura IVC para uma estrutura cv::Mat
-		memcpy(gray_frame.data, image4->data, video.width * video.height);
+		// cv::Mat binary_frame(video.height, video.width, CV_8UC1);
+		// memcpy(binary_frame.data, image4->data, video.width * video.height);
+		memcpy(frame.data, image5->data, video.width * video.height);
 
 		// +++++++++++++++++++++++++
 
 		/* Exibe a frame */
-		cv::imshow("VC - VIDEO", gray_frame);
+		cv::imshow("VC - VIDEO", frame);
+		//cv::imshow("VC - VIDEO", binary_frame);
 
 		/* Sai da aplicação, se o utilizador premir a tecla 'q' */
 		key = cv::waitKey(1);
