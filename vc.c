@@ -1591,6 +1591,50 @@ int vc_draw_boundingbox(IVC *src, OVC *blob)
 	return 1;
 }
 
+int vc_draw_center_of_mass(IVC *src, OVC *blobs, int nblobs, int tamanho_alvo, int cor)
+{
+    unsigned char *data_src = (unsigned char *)src->data;
+    int width = src->width;
+    int height = src->height;
+    int channels = src->channels;
+    int bytesperline = width * channels;
+    int x, y;
+    long int pos;
+    int i;
+
+    if (width <= 0 || height <= 0 || src->data == NULL)
+    {
+        printf("(vc_draw_center_of_mass) Tamanhos inválidos\n");
+        return 0;
+    }
+
+    // Desenha o centro de massa
+    for (i = 0; i < nblobs; i++)
+    {
+        for (y = -tamanho_alvo; y <= tamanho_alvo; y++)
+        {
+            for (x = -tamanho_alvo; x <= tamanho_alvo; x++)
+            {
+                // desenha a cruz
+                if (y == 0 || x == 0)
+                {
+                    pos = (y + blobs[i].yc) * bytesperline + (x + blobs[i].xc) * channels;
+
+                    if (cor == 0)
+                    {
+                        data_src[pos] = 0;
+                    }
+                    else
+                    {
+                        data_src[pos] = 255;
+                    }
+                }
+            }
+        }
+    }
+
+    return 1;
+}
 
 // Funcao para normalizar a imagem com labels e diferentes escalas de cinzas (pintar objetos que sao 1 a 255)
 int vc_normalizar_imagem_labelling(IVC *src, IVC *dst, int nblobs)
@@ -1751,59 +1795,6 @@ int vc_gray_histogram_equalization(IVC *src, IVC *dst)
 	return 1;
 }
 
-// int vc_hsv_to_rgb(IVC *srcdst) {
-//     unsigned char *data = (unsigned char *)srcdst->data;
-//     int width = srcdst->width;
-//     int height = srcdst->height;
-//     int bytesperline = srcdst->bytesperline;
-//     int channels = srcdst->channels;
-//     float hue, saturation, value;
-//     float r, g, b;
-//     int i, size;
-
-//     // Verificação de erros
-//     if ((width <= 0) || (height <= 0) || (data == NULL)) return 0;
-//     if (channels != 3) return 0;
-
-//     size = width * height;
-
-//     for (i = 0; i < size; i++) {
-//         hue = (float)data[i * 3] / 360.0f; // Hue no intervalo [0, 1]
-//         saturation = (float)data[i * 3 + 1] / 255.0f; // Saturation no intervalo [0, 1]
-//         value = (float)data[i * 3 + 2] / 255.0f; // Value no intervalo [0, 1]
-
-//         if (saturation == 0.0f) {
-//             r = g = b = value; // Cinza
-//         } else {
-//             int hue_segment;
-//             float hue_fraction, p, q, t;
-
-//             hue *= 6.0f; // Hue no intervalo [0, 6]
-//             hue_segment = (int)hue;
-//             hue_fraction = hue - hue_segment; // Fração da cor na faixa
-
-//             p = value * (1 - saturation);
-//             q = value * (1 - saturation * hue_fraction);
-//             t = value * (1 - saturation * (1 - hue_fraction));
-
-//             switch (hue_segment) {
-//                 case 0: r = value; g = t; b = p; break;
-//                 case 1: r = q; g = value; b = p; break;
-//                 case 2: r = p; g = value; b = t; break;
-//                 case 3: r = p; g = q; b = value; break;
-//                 case 4: r = t; g = p; b = value; break;
-//                 default: r = value; g = p; b = q; break;
-//             }
-//         }
-
-//         // Atribui valores de R, G, B
-//         data[i * 3] = (unsigned char)(r * 255.0f);
-//         data[i * 3 + 1] = (unsigned char)(g * 255.0f);
-//         data[i * 3 + 2] = (unsigned char)(b * 255.0f);
-//     }
-
-//     return 1;
-// }
 #define CLAMP(x, min, max) (((x) < (min)) ? (min) : (((x) > (max)) ? (max) : (x)))
 
 int vc_gray_edge_prewitt(IVC *src, IVC *dst, float th)

@@ -54,7 +54,6 @@ int vc_binary_open(IVC *src, IVC *dst, int kernel);
 int vc_binary_close(IVC *src, IVC *dst, int kernel);
 int vc_gray_dilate(IVC *src, IVC *dst, int kernel);
 int vc_binary_to_gray(IVC *src, IVC *dst);
-int vc_normalizar_imagem_labelling(IVC *src, IVC *dst, int nblobs);
 int vc_gray_histogram_show(IVC *src, IVC *dst);
 int vc_gray_histogram_equalization(IVC *src, IVC *dst);
 int vc_gray_edge_prewitt(IVC *src, IVC *dst, float th);
@@ -87,3 +86,5 @@ typedef struct {
 OVC* vc_binary_blob_labelling(IVC *src, IVC *dst, int *nlabels);
 int vc_binary_blob_info(IVC *src, OVC *blobs, int nblobs);
 int vc_draw_boundingbox(IVC *src, OVC *blob);
+int vc_draw_center_of_mass(IVC *src, OVC *blobs, int nblobs, int tamanho_alvo, int cor);
+int vc_normalizar_imagem_labelling(IVC *src, IVC *dst, int nblobs);
