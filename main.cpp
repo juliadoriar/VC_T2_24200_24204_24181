@@ -10,6 +10,7 @@
 #include <fstream>
 #include <vector>
 #include <filesystem>
+#include <map>
 
 extern "C"
 {
@@ -40,20 +41,6 @@ void vc_timer(void)
 	}
 }
 
-// // Tabela de mapeamento de cores HSV para valores de resistores
-// std::map<std::string, cv::Scalar> colorMap = {
-//     {"Preto", cv::Scalar(0, 0, 0)},
-//     {"Castanho", cv::Scalar(20, 255, 150)},
-//     {"Vermelho", cv::Scalar(0, 255, 255)},
-//     {"Laranja", cv::Scalar(10, 255, 255)},
-//     {"Amarelo", cv::Scalar(30, 255, 255)},
-//     {"Verde", cv::Scalar(60, 255, 255)},
-//     {"Azul", cv::Scalar(120, 255, 255)},
-//     {"Violeta", cv::Scalar(150, 255, 255)},
-//     {"Cinza", cv::Scalar(0, 0, 100)},
-//     {"Branco", cv::Scalar(0, 0, 255)}
-// };
-
 // Tabela de cores
 std::map<std::string, int> colorValueMap = {
     {"Preto", 0},
@@ -68,7 +55,7 @@ std::map<std::string, int> colorValueMap = {
     {"Branco", 9}
 };
 
-std::map<std::string, int> multiplierMap = {
+std::map<std::string, float> multiplierMap = {
     {"Preto", 1},
     {"Castanho", 10},
     {"Vermelho", 100},
@@ -76,58 +63,77 @@ std::map<std::string, int> multiplierMap = {
     {"Amarelo", 10000},
     {"Verde", 100000},
     {"Azul", 1000000},
-    {"Violeta", 10000000},
-    {"Cinzento", 100000000},
-    {"Branco", 1000000000}
+    {"Dourado", 0.1},
+    {"Cinzento", 0.01}
 };
 
-std::map<std::string, int> colorHueMap = {
-    {"Preto", 0},
-    {"Castanho", 20},
-    {"Vermelho", 0},
-    {"Laranja", 30},
-    {"Amarelo", 60},
-    {"Verde", 120},
-    {"Azul", 240},
-    {"Violeta", 270},
-    {"Cinzento", 0},
-    {"Branco", 0}
+std::map<std::string, float> toleranceMap = {
+	{"Castanho", 1.0f},
+    {"Vermelho", 2.0f},
+	{"Dourado", 5.0f},
+	{"Cinzento", 10.0f}
+};
+
+/*std::map<std::string, std::pair<int, int>> colorHueMap = {
+    {"Preto", {0, 0}},          // Preto é achromático, mas usamos 0 como placeholder
+    {"Castanho", {10, 30}},     // Castanho pode variar de 10° a 30°
+    {"Vermelho", {0, 10}},      // Vermelho varia de 0° a 10°
+    {"Laranja", {30, 45}},      // Laranja varia de 30° a 45°
+    {"Amarelo", {45, 75}},      // Amarelo varia de 45° a 75°
+    {"Verde", {75, 150}},       // Verde varia de 75° a 150°
+    {"Azul", {150, 270}},       // Azul varia de 150° a 270°
+    {"Violeta", {270, 330}},    // Violeta varia de 270° a 330°
+    {"Cinzento", {0, 0}},       // Cinzento é achromático, usamos 0 como placeholder
+    {"Branco", {0, 0}}          // Branco é achromático, usamos 0 como placeholder
 };
 
 std::string identificarCor(int hue) {
     for (const auto& color : colorHueMap) {
-        if (abs(hue - color.second) < 10) {
+        if (hue >= color.second.first && hue <= color.second.second) {
             return color.first;
+        }
+    }
+    return "Desconhecido";
+}*/
+
+std::map<std::string, std::pair<int, int>> colorHueMap = {
+    {"Castanho", {10, 25}},    // Castanho pode variar de 10 a 20
+    {"Vermelho", {0, 10}},     // Vermelho varia de 0 a 10
+    {"Laranja", {25, 35}},     // Laranja varia de 20 a 30
+    {"Verde", {35, 75}},       // Verde varia de 45 a 75
+    {"Azul", {75, 135}},       // Azul varia de 75 a 135
+    {"Violeta", {135, 150}},   // Violeta varia de 135 a 150
+    {"Dourado", {25, 35}}      // Dourado varia de 20 a 30
+};
+
+// Identifica a cor com base no valor HSV
+std::string identificarCor(int hue, int saturation, int value) {
+    if (saturation < 20) { // Considera cores achromáticas
+        if (value < 50) {
+            return "Preto";
+        } else if (value < 200) {
+            return "Cinzento";
+        } else {
+            return "Branco";
+        }
+    } else {
+        if (hue >= 20 && hue <= 30) {
+            // Distingue entre Dourado e Laranja baseado na saturação e valor
+            if (saturation < 100 && value < 200) {
+                return "Dourado";
+            } else {
+                return "Laranja";
+            }
+        } else {
+            for (const auto& color : colorHueMap) {
+                if (hue >= color.second.first && hue <= color.second.second) {
+                    return color.first;
+                }
+            }
         }
     }
     return "Desconhecido";
 }
-
-// Função para identificar a cor dominante em uma região da imagem
-/*std::string identifyDominantColor(cv::Mat& hsvImage) {
-	
-	// Calcular o histograma do canal H (Hue)
-    std::vector<cv::Mat> hsvChannels;
-    split(hsvImage, hsvChannels);
-    int histSize = 180;
-    float range[] = {0, 180};
-    const float* histRange = {range};
-    cv::Mat hist;
-    calcHist(&hsvChannels[0], 1, 0, cv::Mat(), hist, 1, &histSize, &histRange);
-
-    // Encontrar o bin com o maior valor no histograma
-    cv::Point maxLoc;
-    minMaxLoc(hist, 0, 0, 0, &maxLoc);
-
-    // Retornar a cor dominante baseada no valor de Hue
-    for (auto const& color : colorMap) {
-        if (abs(maxLoc.y - color.second[0]) < 10) {
-            return color.first;
-        }
-    }
-
-    return "Desconhecido";
-}*/
 
 int main(void)
 {
@@ -153,9 +159,6 @@ int main(void)
 	*/
 	capture.open(videofile);
 
-	/* Em alternativa, abrir captura de vídeo pela Webcam #0 */
-	// capture.open(0, cv::CAP_DSHOW); // Pode-se utilizar apenas capture.open(0);
-
 	/* Verifica se foi possível abrir o ficheiro de vídeo */
 	if (!capture.isOpened())
 	{
@@ -179,15 +182,15 @@ int main(void)
 
 	cv::Mat frame;
 	
-	// Cria uma nova imagem IVC
+	// Cria novas imagens IVC
 	IVC *image = vc_image_new(video.width, video.height, 3, 255);
 	IVC *image2 = vc_image_new(video.width, video.height, 1, 255);
 	IVC *imagemDilatada = vc_image_new(video.width, video.height, 1, 255);
 	IVC *imagemEtiquetada = vc_image_new(video.width, video.height, 1, 255);
 	IVC *imagemHSV = vc_image_new(video.width, video.height, 3, 255);
-	IVC *image6 = vc_image_new(video.width, video.height, 3, 255);
 
 	int contadorResistencias = 0;
+	int *resistencia = nullptr;
 
 	while (key != 'q')
 	{
@@ -201,10 +204,10 @@ int main(void)
 		/* Número da frame a processar */
 		video.nframe = (int)capture.get(cv::CAP_PROP_POS_FRAMES);
 
-		/* Exemplo de inserçãoo texto na frame */
-		str = std::string("RESOLUCAO: ").append(std::to_string(video.width)).append("x").append(std::to_string(video.height));
-		cv::putText(frame, str, cv::Point(20, 25), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
-		cv::putText(frame, str, cv::Point(20, 25), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
+		/* Exemplo de inserção texto na frame */
+		//str = std::string("RESOLUCAO: ").append(std::to_string(video.width)).append("x").append(std::to_string(video.height));
+		//cv::putText(frame, str, cv::Point(20, 25), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
+		//cv::putText(frame, str, cv::Point(20, 25), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
 		str = std::string("TOTAL DE FRAMES: ").append(std::to_string(video.ntotalframes));
 		cv::putText(frame, str, cv::Point(20, 50), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
 		cv::putText(frame, str, cv::Point(20, 50), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
@@ -215,13 +218,13 @@ int main(void)
 		cv::putText(frame, str, cv::Point(20, 100), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
 		cv::putText(frame, str, cv::Point(20, 100), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
 
-		// Faça o seu código aqui...
-		// +++++++++++++++++++++++++
 
+		std::string str = "Valor do resistor " + std:: to_string(contadorResistencias) + ": " + std::to_string(resistencia == nullptr ? 0 : *resistencia) + " ohms";
+		cv::putText(frame, str, cv::Point(20, 700), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
+		cv::putText(frame, str, cv::Point(20, 700), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
 
 		// Copia dados de imagem da estrutura cv::Mat para uma estrutura IVC
 		memcpy(image->data, frame.data, video.width * video.height * 3);
-		memcpy(image6->data, frame.data, video.width * video.height * 3);
 
 		// Converte imagem BGR para HSV
 		vc_rgb_to_hsv(image);
@@ -230,18 +233,11 @@ int main(void)
 		memcpy(imagemHSV->data, image->data, video.width * video.height * 3);
 
 		// Segmentação da imagem HSV
-		//vc_hsv_segmentation(image, 0, 200, 40, 60, 40, 75);
 		vc_hsv_segmentation(image, 0, 200, 40, 60, 40, 75);
 
 
 		// Tranforma imagem HSV em imagem binária
 		vc_3chanels_to_1(image, image2);
-		//vc_3chanels_to_1_binary(image, image2);
-
-		//vc_gray_histogram_show(image2, imagemDilatada);
-
-		//vc_gray_dilate(image2, imagemDilatada, 15);
-		//vc_binary_dilate(image2, imagemDilatada, 30);
 
 		// Faz a dilatação da imagem binária
 		// Converte IVC para cv::Mat
@@ -250,30 +246,13 @@ int main(void)
 
         // Cria kernel
         int kernelSize = 47;
-		//int kernelSize2 = 3;
+
         cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSize, kernelSize));
-		//cv::Mat kernelErosion = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSize2, kernelSize2));
 
-		// Aplica a função cv::erode
-		//cv::erode(matImagemBinaria, matErodida, kernelErosion);
-
-        // Aplica a função cv::dilate
-        //cv::dilate(matErodida, matDilatada, kernel);
         cv::dilate(matImagemBinaria, matDilatada, kernel);
 
         // Converte de volta para IVC
         memcpy(imagemDilatada->data, matDilatada.data, video.width * video.height);
-
-
-		// // Encontra os contornos na imagem binarizada
-		// std::vector<std::vector<cv::Point>> contours;
-		// cv::findContours(gray_frame, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-		// // Desenha os contornos (caixas delimitadoras) na imagem original
-		// for (size_t i = 0; i < contours.size(); i++) {
-		// 	cv::Rect boundingBox = cv::boundingRect(contours[i]);
-		// 	cv::rectangle(frame, boundingBox, cv::Scalar(0, 255, 0), 2);
-		// }
 
 		// Etiquetagem dos blobs
 		int nlabels;
@@ -285,143 +264,127 @@ int main(void)
 		// Converte IVC para cv::Mat
 		cv::Mat hsvImage(image->height, image->width, CV_8UC3, imagemHSV->data);
 		
-		
+		//Bounding box e identificação de resistências
 		if (blobs != nullptr)
-		{
-		// Definir as regiões das faixas de acordo com a posição das resistências contidas nas bounding boxes
-		cv::Rect band1(blobs->xc, blobs->yc, 5, blobs->height);
-		cv::Rect band2(blobs->xc + 5, blobs->yc, 5, blobs->height);
-		cv::Rect band3(blobs->xc + 5, blobs->yc, 5, blobs->height);
-		cv::Rect band4(blobs->xc + 5, blobs->yc, 5, blobs->height);
-		//cv::Rect band5(blobs->x + 60, blobs->y, 15, 5);
+		{		
+			int altura = video.width / 2;
+			const float tolerance = 3;
 
-        //cv::Rect band1(30, 50, 10, 100);
-		
-		
-		int altura = video.width / 2;
-		const float tolerance = 3;
-
-		// Verifica se o blob é uma resistência
-		if (blobs->area > 15000 && blobs->area < 28000 &&blobs->perimeter > 500 && blobs->perimeter < 700 && blobs->height < 130 && blobs->height > 85)
-		{
-			// Desenha as bounding boxes
-			vc_draw_boundingbox(imagemHSV, blobs);
-			vc_draw_center_of_mass(imagemHSV, blobs, nlabels, 10, 255);
-
-			
-
-			// Quando o centro de massa passar pelo centro da tela, contar um blob como resistência
-			if (abs(blobs->yc - altura) <= tolerance)
+			// Verifica se o blob é uma resistência
+			if (blobs->area > 15000 && blobs->area < 28000 &&blobs->perimeter > 500 && blobs->perimeter < 700 && blobs->height < 130 && blobs->height > 85)
 			{
-				std::cout << "Resistencia detectada" << std::endl;
-				contadorResistencias++;
+				// Desenha as bounding boxes e cruzes no centro de massa
+				vc_draw_boundingbox(imagemHSV, blobs);
+				vc_draw_center_of_mass(imagemHSV, blobs, nlabels, 10, 255);
 
-				// Identificar todas as cores na linha do centro de massa dentro do blob
-				cv::Mat linha = hsvImage.row(blobs->yc);
-
-				// Delimitar a área do blob na linha
-				int startX = std::max(0, blobs->xc - blobs->width / 2);
-				int endX = std::min(linha.cols - 1, blobs->xc + blobs->width / 2);
-				cv::Mat linhaBlob = linha(cv::Range::all(), cv::Range(startX, endX));
-
-				std::vector<cv::Mat> hsvChannels;
-				cv::split(linhaBlob, hsvChannels);
-
-				int segmentSize = linhaBlob.cols / 4; // Tamanho do segmento
-				std::vector<std::string> coresResistor;
-
-				for (int i = 0; i < linhaBlob.cols; i += segmentSize) 
+				// Quando o centro de massa passa pelo centro da tela, conta um blob como resistência
+				if (abs(blobs->yc - altura) <= tolerance)
 				{
-					cv::Rect roi(i, 0, std::min(segmentSize, linhaBlob.cols - i), 1);
-					cv::Mat segment = linhaBlob(roi);
+					//std::cout << "Resistencia detectada" << std::endl;
+					contadorResistencias++;
 
-					std::vector<cv::Mat> segmentChannels;
-					cv::split(segment, segmentChannels);
+					// Identifica todas as cores na linha do centro de massa dentro do blob
+					cv::Mat linha = hsvImage.row(blobs->yc);
 
-					int histSize = 180;
-					float range[] = {0, 180};
-					const float* histRange = {range};
-					cv::Mat hist;
-					cv::calcHist(&segmentChannels[0], 1, 0, cv::Mat(), hist, 1, &histSize, &histRange);
+					// Delimita a área do blob na linha
+					int startX = std::max(0, blobs->xc - blobs->width / 2);
+					int endX = std::min(linha.cols - 1, blobs->xc + blobs->width / 2);
+					cv::Mat linhaBlob = linha(cv::Range::all(), cv::Range(startX, endX));
 
-					// Encontrar o bin com o maior valor no histograma
-					cv::Point maxLoc;
-					cv::minMaxLoc(hist, 0, 0, 0, &maxLoc);
+					std::vector<cv::Mat> hsvChannels;
+					cv::split(linhaBlob, hsvChannels);
 
-					// Retornar a cor dominante baseada no valor de Hue
-					std::string corDominante = identificarCor(maxLoc.y);
-					coresResistor.push_back(corDominante);
-					// for (const auto& color : colorValueMap) {
-					// 	if (abs(maxLoc.y - color.second) < 10) {
-					// 		coresResistor.push_back(color.first);
-					// 		break;
-					// 	}
-					// }
+					int segmentSize = linhaBlob.cols / 4; // Tamanho do segmento
+					std::vector<std::string> coresResistor;
+
+					for (int i = 0; i < linhaBlob.cols; i += segmentSize) 
+					{
+						cv::Rect roi(i, 0, std::min(segmentSize, linhaBlob.cols - i), 1);
+						cv::Mat segment = linhaBlob(roi);
+
+						std::vector<cv::Mat> segmentChannels;
+						cv::split(segment, segmentChannels);
+
+						// Calcula o histograma do canal H (Hue)
+						int histSize = 180;
+						float range[] = {0, 180};
+						const float* histRange = {range};
+						cv::Mat hist;
+						cv::calcHist(&segmentChannels[0], 1, 0, cv::Mat(), hist, 1, &histSize, &histRange);
+
+						// Encontra o bin com o maior valor no histograma
+						cv::Point maxLoc;
+						cv::minMaxLoc(hist, 0, 0, 0, &maxLoc);
+						int hue = maxLoc.y;
+
+						// Calcula a média de saturação e valor
+						int saturation = cv::mean(segmentChannels[1])[0];
+						int value = cv::mean(segmentChannels[2])[0];
+
+						// Identifica a cor dominante
+						std::string corDominante = identificarCor(hue, saturation, value);
+						// Adiciona a cor à lista
+						coresResistor.push_back(corDominante);
+					}
+
+					// Exibe as cores na ordem
+					for (const auto& cor : coresResistor) {
+						std::cout << "Cor: " << cor << std::endl;
+					}
+
+					// Verifica se 4 cores foram detectadas
+					if (coresResistor.size() == 4) {
+						// Calcula o valor da resistência
+						int digit1 = colorValueMap[coresResistor[0]];
+						int digit2 = colorValueMap[coresResistor[1]];
+						int multiplier = multiplierMap[coresResistor[2]];
+						int tolerancia = toleranceMap[coresResistor[3]];
+
+						//*resistencia = (digit1 * 10 + digit2) * multiplier;
+						// Calcula o novo valor da resistência
+						int novoValorResistencia = (digit1 * 10 + digit2) * multiplier;
+
+						// Se o ponteiro para a resistência ainda for nulo, atribua o novo valor da resistência a ele
+						if (resistencia == nullptr) {
+							resistencia = new int(novoValorResistencia);
+						} else {
+							// Caso contrário, atualize o valor da resistência
+							*resistencia = novoValorResistencia;
+						}
+						std::cout << "Valor da resistência: " << *resistencia << " ohms" << std::endl;
+						std::cout << "Tolerância: ±" << tolerancia << "%" << std::endl;
+					} else if (coresResistor.size() == 3) {
+						// Calcula o valor da resistência
+						int digit1 = colorValueMap[coresResistor[0]];
+						int digit2 = colorValueMap[coresResistor[1]];
+						int multiplier = multiplierMap[coresResistor[2]];
+						int tolerancia = 5.0; //Dourado
+
+						//*resistencia = (digit1 * 10 + digit2) * multiplier;
+						// Calcula o novo valor da resistência
+						int novoValorResistencia = (digit1 * 10 + digit2) * multiplier;
+
+						// Se o ponteiro para a resistência ainda for nulo, atribua o novo valor da resistência a ele
+						if (resistencia == nullptr) {
+							resistencia = new int(novoValorResistencia);
+						} else {
+							// Caso contrário, atualize o valor da resistência
+							*resistencia = novoValorResistencia;
+						}
+						std::cout << "Valor da resistência: " << resistencia << " ohms" << std::endl;
+						std::cout << "Tolerância: ±" << tolerancia << "%" << std::endl;
+					} 
+					else {
+						std::cout << "Erro: Não foram detectadas 4 cores." << std::endl;
+					}
 				}
-
-				// Exibir as cores na ordem
-				for (const auto& cor : coresResistor) {
-					std::cout << "Cor: " << cor << std::endl;
-				}
-
-				// Verificar se 4 cores foram detectadas
-				if (coresResistor.size() == 4) {
-					// Calcular o valor da resistência
-					int digit1 = colorValueMap[coresResistor[0]];
-					int digit2 = colorValueMap[coresResistor[1]];
-					int digit3 = colorValueMap[coresResistor[2]];
-					int multiplier = multiplierMap[coresResistor[3]];
-
-					int resistencia = (digit1 * 10 + digit2) * multiplier;
-					std::cout << "Valor da resistência: " << resistencia << " ohms" << std::endl;
-				} else {
-					std::cout << "Erro: Não foram detectadas 4 cores." << std::endl;
-				}
-
-				// // Identificar a cor dominante de cada faixa
-				// std::string color1 = identifyDominantColor(hsvImage(band1));
-				// std::cout << "Faixa 1: " << color1 << std::endl;
-				// std::string color2 = identifyDominantColor(hsvImage(band2));
-				// std::cout << "Faixa 2: " << color2 << std::endl;
-				// std::string color3 = identifyDominantColor(hsvImage(band3));
-				// std::cout << "Faixa 3: " << color3 << std::endl;
-				// std::string color4 = identifyDominantColor(hsvImage(band4));
-				// std::cout << "Faixa 4: " << color4 << std::endl;
 			}
-			
-
 		}
-		}
-
-		// Extrair as cores das resistencias para calcular o seu valor em ohm
-		
-		//Tabela de resistências
-		//Cores: Preto, Castanho, Vermelho, Laranja, Amarelo, Verde, Azul, Violeta, Cinzento, Branco
-		//Valores: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-		//Tolerância: Ouro, Prata
-		//Multiplicador: Preto, Castanho, Vermelho, Laranja, Amarelo, Verde, Azul, Violeta, Cinzento, Branco
-		//Valores: 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000
-
-
-
-			//Escrever a area e o perimetro de cada blob
-			// for (int i = 0; i < nlabels; i++)
-			// {
-			// 	std::cout << "Frame " << video.nframe << "\n";
-			// 	std::cout << "Blob " << i << " Area: " << blobs[i].area << " Perimetro: " << blobs[i].perimeter << std::endl;
-			// 	std::cout << "Blob " << i << " X: " << blobs[i].x << " Y: " << blobs[i].y << std::endl;
-			// 	std::cout << "Blob " << i << " Width: " << blobs[i].width << " Height: " << blobs[i].height << std::endl;
-			// 	std::cout << "Blob " << i << " Xc: " << blobs[i].xc << " Yc: " << blobs[i].yc << std::endl;
-			// 	std::cout << "Blob " << i << " Label: " << blobs[i].label << std::endl;
-			// }
-		
 
 		//  Copia dados de imagem da estrutura IVC para uma estrutura cv::Mat
 		//cv::Mat binary_frame(video.height, video.width, CV_8UC1);
 		//memcpy(binary_frame.data, imagemDilatada->data, video.width * video.height);
-		memcpy(frame.data, image6->data, video.width * video.height * 3);
-
-		// +++++++++++++++++++++++++
+		memcpy(frame.data, imagemHSV->data, video.width * video.height * 3);
 
 		/* Exibe a frame */
 		cv::imshow("VC - VIDEO", frame);
@@ -455,7 +418,7 @@ int main(void)
 	vc_image_free(imagemDilatada);
 	vc_image_free(imagemEtiquetada);
 	vc_image_free(imagemHSV);
-	vc_image_free(image6);
+
 
 	return 0;
 }
