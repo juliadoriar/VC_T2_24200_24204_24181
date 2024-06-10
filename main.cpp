@@ -326,11 +326,11 @@ int main(void)
 						// Calcula o novo valor da resistência
 						int novoValorResistencia = (digit1 * 10 + digit2) * multiplier;
 
-						// Se o ponteiro para a resistência ainda for nulo, atribua o novo valor da resistência a ele
+						// Se o ponteiro para a resistência ainda for nulo, atribui o novo valor da resistência a ele
 						if (resistencia == nullptr) {
 							resistencia = new int(novoValorResistencia);
 						} else {
-							// Caso contrário, atualize o valor da resistência
+							// Caso contrário, atualiza o valor da resistência
 							*resistencia = novoValorResistencia;
 						}
 						std::cout << "Valor da resistência: " << *resistencia << " ohms" << std::endl;
@@ -345,11 +345,11 @@ int main(void)
 						// Calcula o novo valor da resistência
 						int novoValorResistencia = (digit1 * 10 + digit2) * multiplier;
 
-						// Se o ponteiro para a resistência ainda for nulo, atribua o novo valor da resistência a ele
+						// Se o ponteiro para a resistência ainda for nulo, atribui o novo valor da resistência a ele
 						if (resistencia == nullptr) {
 							resistencia = new int(novoValorResistencia);
 						} else {
-							// Caso contrário, atualize o valor da resistência
+							// Caso contrário, atualiza o valor da resistência
 							*resistencia = novoValorResistencia;
 						}
 						std::cout << "Valor da resistência: " << resistencia << " ohms" << std::endl;
