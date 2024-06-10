@@ -74,28 +74,6 @@ std::map<std::string, float> toleranceMap = {
 	{"Cinzento", 10.0f}
 };
 
-/*std::map<std::string, std::pair<int, int>> colorHueMap = {
-    {"Preto", {0, 0}},          // Preto é achromático, mas usamos 0 como placeholder
-    {"Castanho", {10, 30}},     // Castanho pode variar de 10° a 30°
-    {"Vermelho", {0, 10}},      // Vermelho varia de 0° a 10°
-    {"Laranja", {30, 45}},      // Laranja varia de 30° a 45°
-    {"Amarelo", {45, 75}},      // Amarelo varia de 45° a 75°
-    {"Verde", {75, 150}},       // Verde varia de 75° a 150°
-    {"Azul", {150, 270}},       // Azul varia de 150° a 270°
-    {"Violeta", {270, 330}},    // Violeta varia de 270° a 330°
-    {"Cinzento", {0, 0}},       // Cinzento é achromático, usamos 0 como placeholder
-    {"Branco", {0, 0}}          // Branco é achromático, usamos 0 como placeholder
-};
-
-std::string identificarCor(int hue) {
-    for (const auto& color : colorHueMap) {
-        if (hue >= color.second.first && hue <= color.second.second) {
-            return color.first;
-        }
-    }
-    return "Desconhecido";
-}*/
-
 std::map<std::string, std::pair<int, int>> colorHueMap = {
     {"Castanho", {10, 25}},    // Castanho pode variar de 10 a 20
     {"Vermelho", {0, 10}},     // Vermelho varia de 0 a 10
@@ -180,6 +158,7 @@ int main(void)
 	/* Inicia o timer */
 	vc_timer();
 
+	// Declara a variável para armazenar a frame
 	cv::Mat frame;
 	
 	// Cria novas imagens IVC
@@ -205,9 +184,9 @@ int main(void)
 		video.nframe = (int)capture.get(cv::CAP_PROP_POS_FRAMES);
 
 		/* Exemplo de inserção texto na frame */
-		//str = std::string("RESOLUCAO: ").append(std::to_string(video.width)).append("x").append(std::to_string(video.height));
-		//cv::putText(frame, str, cv::Point(20, 25), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
-		//cv::putText(frame, str, cv::Point(20, 25), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
+		str = std::string("RESOLUCAO: ").append(std::to_string(video.width)).append("x").append(std::to_string(video.height));
+		cv::putText(frame, str, cv::Point(20, 25), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
+		cv::putText(frame, str, cv::Point(20, 25), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
 		str = std::string("TOTAL DE FRAMES: ").append(std::to_string(video.ntotalframes));
 		cv::putText(frame, str, cv::Point(20, 50), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 0, 0), 2);
 		cv::putText(frame, str, cv::Point(20, 50), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(255, 255, 255), 1);
@@ -268,7 +247,7 @@ int main(void)
 		if (blobs != nullptr)
 		{		
 			int altura = video.width / 2;
-			const float tolerance = 3;
+			const int tolerance = 3;
 
 			// Verifica se o blob é uma resistência
 			if (blobs->area > 15000 && blobs->area < 28000 &&blobs->perimeter > 500 && blobs->perimeter < 700 && blobs->height < 130 && blobs->height > 85)
@@ -280,10 +259,10 @@ int main(void)
 				// Quando o centro de massa passa pelo centro da tela, conta um blob como resistência
 				if (abs(blobs->yc - altura) <= tolerance)
 				{
-					//std::cout << "Resistencia detectada" << std::endl;
 					contadorResistencias++;
 
 					// Identifica todas as cores na linha do centro de massa dentro do blob
+					// Acessa a linha do centro de massa
 					cv::Mat linha = hsvImage.row(blobs->yc);
 
 					// Delimita a área do blob na linha
@@ -291,17 +270,21 @@ int main(void)
 					int endX = std::min(linha.cols - 1, blobs->xc + blobs->width / 2);
 					cv::Mat linhaBlob = linha(cv::Range::all(), cv::Range(startX, endX));
 
+					// Separa os canais HSV
 					std::vector<cv::Mat> hsvChannels;
 					cv::split(linhaBlob, hsvChannels);
-
+					
 					int segmentSize = linhaBlob.cols / 4; // Tamanho do segmento
 					std::vector<std::string> coresResistor;
 
+					// Itera sobre os segmentos da linha
 					for (int i = 0; i < linhaBlob.cols; i += segmentSize) 
 					{
+						// Recorta o segmento
 						cv::Rect roi(i, 0, std::min(segmentSize, linhaBlob.cols - i), 1);
 						cv::Mat segment = linhaBlob(roi);
 
+						// Separa os canais HSV dentro do segmento
 						std::vector<cv::Mat> segmentChannels;
 						cv::split(segment, segmentChannels);
 
@@ -333,14 +316,13 @@ int main(void)
 					}
 
 					// Verifica se 4 cores foram detectadas
-					if (coresResistor.size() == 4) {
+					if (coresResistor.size() >= 4) {
 						// Calcula o valor da resistência
 						int digit1 = colorValueMap[coresResistor[0]];
 						int digit2 = colorValueMap[coresResistor[1]];
 						int multiplier = multiplierMap[coresResistor[2]];
 						int tolerancia = toleranceMap[coresResistor[3]];
 
-						//*resistencia = (digit1 * 10 + digit2) * multiplier;
 						// Calcula o novo valor da resistência
 						int novoValorResistencia = (digit1 * 10 + digit2) * multiplier;
 
@@ -360,7 +342,6 @@ int main(void)
 						int multiplier = multiplierMap[coresResistor[2]];
 						int tolerancia = 5.0; //Dourado
 
-						//*resistencia = (digit1 * 10 + digit2) * multiplier;
 						// Calcula o novo valor da resistência
 						int novoValorResistencia = (digit1 * 10 + digit2) * multiplier;
 
@@ -382,13 +363,10 @@ int main(void)
 		}
 
 		//  Copia dados de imagem da estrutura IVC para uma estrutura cv::Mat
-		//cv::Mat binary_frame(video.height, video.width, CV_8UC1);
-		//memcpy(binary_frame.data, imagemDilatada->data, video.width * video.height);
 		memcpy(frame.data, imagemHSV->data, video.width * video.height * 3);
 
 		/* Exibe a frame */
 		cv::imshow("VC - VIDEO", frame);
-		//cv::imshow("VC - VIDEO", binary_frame);
 
 		/* Sai da aplicação, se o utilizador premir a tecla 'q' */
 		key = cv::waitKey(1);
